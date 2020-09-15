@@ -5,7 +5,7 @@
 Clone the repository into your local machine using the below command
 
 ```
-git clone https://github.com/madhank93/TestVagrant-assignment.git
+https://github.com/dhirajvarma16/TestVagrant_Weather_Assignment.git
 ```
 #### Prerequisite
 * [Maven](https://maven.apache.org/install.html)
