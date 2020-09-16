@@ -1,15 +1,15 @@
 package com.testvagrant.testcases;
 
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import com.testvagrant.drivermanager.DriverFactory;
 import com.testvagrant.model.WeatherModel;
@@ -18,21 +18,24 @@ import com.testvagrant.utils.PropertyReader;
 
 public class NDTVWeatherPageTest {
 
-	private BasePage basepage;
-	private PropertyReader property = new PropertyReader();
 	static HashMap<String, WeatherModel> weatherUiObj = new HashMap<String, WeatherModel>();
 
-	@BeforeMethod
-	public void createDriver() {
-		basepage = new BasePage(DriverFactory.getBrowser(System.getProperty("browser")).getDriver());
-		property.readPropertiesFile("src/test/resources/config.properties");
+	@Test
+	public static HashMap<String, WeatherModel> uiObjects() {
+		return weatherUiObj;
 	}
 
-	@Test
-	public void verifyTitle() {
-		String title = basepage.goToNDTVHomePage(property.getProperty("url")).goToWeatherPage().getPageTitle();
+	private BasePage basepage;
 
-		assertThat(title).contains("NDTV Weather");
+	private PropertyReader property = new PropertyReader();
+
+	@Test
+	public void checkDefaultCitiesAppearedInMap() {
+		ArrayList<String> citiesInMap = basepage.goToNDTVHomePage(property.getProperty("url")).goToWeatherPage()
+				.getDefaultCitiesAppearedInMap();
+
+		assertThat(citiesInMap).isNotNull().contains("Bengaluru", "Bhopal", "Chennai", "Hyderabad", "Kolkata",
+				"Lucknow", "Mumbai", "New Delhi", "Patna", "Srinagar", "Visakhapatnam");
 	}
 
 	@Test
@@ -44,13 +47,17 @@ public class NDTVWeatherPageTest {
 				"Lucknow", "Mumbai", "New Delhi", "Patna", "Srinagar", "Visakhapatnam");
 	}
 
-	@Test
-	public void checkDefaultCitiesAppearedInMap() {
-		ArrayList<String> citiesInMap = basepage.goToNDTVHomePage(property.getProperty("url")).goToWeatherPage()
-				.getDefaultCitiesAppearedInMap();
+	@Test(dataProvider = "Cities")
+	public void checkWeatherElementsAreDisplayedForACity(String city) {
+		Boolean result = basepage.goToNDTVHomePage(property.getProperty("url")).goToWeatherPage().unSelectAllCities()
+				.selectACityInCheckBox(city).clickOnACityInMap(city).checkWeatherElementsAreDisplayed();
 
-		assertThat(citiesInMap).isNotNull().contains("Bengaluru", "Bhopal", "Chennai", "Hyderabad", "Kolkata",
-				"Lucknow", "Mumbai", "New Delhi", "Patna", "Srinagar", "Visakhapatnam");
+		assertTrue(result);
+	}
+
+	@DataProvider(name = "Cities")
+	public Object[] cityNamesProvider() {
+		return new Object[] { "Ahmedabad", "Mumbai", "Chennai" };
 	}
 
 	@Test
@@ -63,37 +70,33 @@ public class NDTVWeatherPageTest {
 		assertThat(citiesInCheckbox).isEqualTo(citiesInMap);
 	}
 
-	@DataProvider(name = "Cities")
-	public Object[] cityNamesProvider() {
-		return new Object[] { "Ahmedabad", "Mumbai", "Chennai" };
+	@BeforeMethod
+	public void createDriver() {
+		basepage = new BasePage(DriverFactory.getBrowser(System.getProperty("browser")).getDriver());
+		property.readPropertiesFile("src/test/resources/config.properties");
 	}
 
-	@Test(dataProvider = "Cities")
-	public void checkWeatherElementsAreDisplayedForACity(String city) {
-		Boolean result = basepage.goToNDTVHomePage(property.getProperty("url")).goToWeatherPage().unSelectAllCities()
-				.selectACityInCheckBox(city).clickOnACityInMap(city).checkWeatherElementsAreDisplayed();
-
-		assertTrue(result);
+	@AfterMethod
+	public void driverQuit() {
+		basepage.tearDown();
 	}
 
 	@Test(dataProvider = "Cities")
 	public void validateWeatherDetailsDisplayedForACity(String city) {
-		WeatherModel weatherObj = basepage.goToNDTVHomePage(property.getProperty("url")).goToWeatherPage().unSelectAllCities()
-				.selectACityInCheckBox(city).clickOnACityInMap(city).getTempDetailsAsWeatherObject();
-		
+		WeatherModel weatherObj = basepage.goToNDTVHomePage(property.getProperty("url")).goToWeatherPage()
+				.unSelectAllCities().selectACityInCheckBox(city).clickOnACityInMap(city)
+				.getTempDetailsAsWeatherObject();
+
 		weatherUiObj.put(city, weatherObj);
 
 		assertThat(weatherObj).isNotNull().matches(element -> element.getHumidity().floatValue() >= 0
 				&& element.getTempInDegrees().floatValue() >= 0 && element.getTempInFahrenheit().floatValue() >= 0);
-	} 
-	
-	@Test
-	public static HashMap<String, WeatherModel> uiObjects() {
-		return weatherUiObj;
 	}
-	
-	@AfterMethod
-	public void driverQuit() {
-		basepage.tearDown();
+
+	@Test
+	public void verifyTitle() {
+		String title = basepage.goToNDTVHomePage(property.getProperty("url")).goToWeatherPage().getPageTitle();
+
+		assertThat(title).contains("NDTV Weather");
 	}
 }
